@@ -1,4 +1,4 @@
-package com.danawa.search.plugins;
+package com.danawa.search;
 
 import org.apache.logging.log4j.Logger;
 import org.elasticsearch.cluster.metadata.IndexNameExpressionResolver;
@@ -16,6 +16,8 @@ import org.elasticsearch.rest.RestHandler;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static java.util.Collections.singletonList;
+
 
 public class LeftJoinPlugin extends Plugin implements ActionPlugin {
 
@@ -32,7 +34,6 @@ public class LeftJoinPlugin extends Plugin implements ActionPlugin {
     @Override public List<RestHandler> getRestHandlers(Settings settings, RestController controller,
                                                        ClusterSettings clusterSettings, IndexScopedSettings indexScopedSettings, SettingsFilter filter,
                                                        IndexNameExpressionResolver resolver, Supplier<DiscoveryNodes> nodes) {
-//        return singletonList(new ProductNameAnalysisAction(settings, controller));
-        return null;
+        return singletonList(new LeftJoinAction(settings, controller));
     }
 }

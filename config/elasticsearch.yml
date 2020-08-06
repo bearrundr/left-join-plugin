@@ -90,5 +90,11 @@
 
 
 #node.local: true
-node.name: es1
+node.name: node
 xpack.ml.enabled: false
+network.host: 0.0.0.0
+discovery.seed_hosts: 0.0.0.0
+cluster.initial_master_nodes: ["node"]
+node.master: true
+http.cors.enabled: false
+http.cors.allow-origin: "*"
