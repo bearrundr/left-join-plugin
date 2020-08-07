@@ -13,6 +13,7 @@ import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestHandler;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -34,6 +35,11 @@ public class LeftJoinPlugin extends Plugin implements ActionPlugin {
     @Override public List<RestHandler> getRestHandlers(Settings settings, RestController controller,
                                                        ClusterSettings clusterSettings, IndexScopedSettings indexScopedSettings, SettingsFilter filter,
                                                        IndexNameExpressionResolver resolver, Supplier<DiscoveryNodes> nodes) {
-        return singletonList(new LeftJoinAction(settings, controller));
+//        return singletonList(new LeftJoinAction(settings, controller));
+        List<RestHandler> list = new ArrayList<>();
+//        list.add(new JoinAction(settings, controller));
+        list.add(new LeftJoinAction(settings, controller));
+        return list;
+
     }
 }
