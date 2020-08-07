@@ -1,53 +1,34 @@
 package com.danawa.search;
 
 import org.apache.logging.log4j.Logger;
-import org.apache.lucene.queryparser.flexible.core.builders.QueryBuilder;
-import org.apache.lucene.queryparser.xml.QueryBuilderFactory;
 import org.apache.lucene.search.TotalHits;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.admin.cluster.node.info.NodeInfo;
-import org.elasticsearch.action.admin.cluster.node.info.NodesInfoRequest;
-import org.elasticsearch.action.admin.cluster.node.info.NodesInfoResponse;
-import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
-import org.elasticsearch.action.admin.cluster.state.ClusterStateResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.client.Requests;
 import org.elasticsearch.client.node.NodeClient;
-import org.elasticsearch.cluster.node.DiscoveryNode;
-import org.elasticsearch.cluster.node.DiscoveryNodes;
+import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.Table;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.*;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.elasticsearch.common.xcontent.json.JsonXContentGenerator;
-import org.elasticsearch.common.xcontent.json.JsonXContentParser;
-import org.elasticsearch.common.xcontent.support.MapXContentParser;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.plugins.PluginInfo;
-import org.elasticsearch.rest.*;
-import org.elasticsearch.rest.action.RestActionListener;
-import org.elasticsearch.rest.action.RestResponseListener;
-import org.elasticsearch.rest.action.cat.RestTable;
+import org.elasticsearch.rest.BaseRestHandler;
+import org.elasticsearch.rest.BytesRestResponse;
+import org.elasticsearch.rest.RestController;
+import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.search.Scroll;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.SearchModule;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.JSONWriter;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.util.*;
 
 import static org.elasticsearch.rest.RestStatus.OK;
@@ -55,7 +36,6 @@ import static org.elasticsearch.rest.RestStatus.OK;
 public class LeftJoinAction extends BaseRestHandler {
     private static Logger logger = Loggers.getLogger(LeftJoinAction.class, "");
 
-    private static final String CONTENT_TYPE_JSON = "application/json;charset=UTF-8";
 
     @Inject
     public LeftJoinAction(Settings settings, RestController controller) {
@@ -70,79 +50,86 @@ public class LeftJoinAction extends BaseRestHandler {
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
-        JSONObject content = JSONUtils.parseRequestBody(request);
-        String index = request.param("index", "");
-        String action = request.param("action", "");
-        logger.debug("index: {}, action: {}", index, action);
+        try {
+            JSONObject content = JSONUtils.parseRequestBody(request);
+            String parentIndices = request.param("index", "");
+            String explain = request.params().getOrDefault("explain", "false");
+            Settings.Builder settingsBuilder = Settings.builder();
+            for (Map.Entry<String, String> param : request.params().entrySet()) {
+                settingsBuilder.put(param.getKey(), param.getValue());
 
-        JSONObject query  = content.getJSONObject("query");
-        JSONObject join   = content.getJSONObject("join");
+            }
+            Settings settings = settingsBuilder.build();
 
-        String parentField = join.getString("parent-field");
-        String childIndex = join.getString("index");
-        String childField = join.getString("child-field");
+            JSONObject join = content.getJSONObject("join");
+            content.remove("join");
 
-        SearchResponse parentResponse = search(client, index, query.toString());
-        SearchHit[] parentSearchHits = parentResponse.getHits().getHits();
+            String parentField = join.getString("parent-field");
 
-        Set<String> joinKeys = new LinkedHashSet<>();
-        for (int i = 0; i < parentSearchHits.length; i++) {
-            Map<String, String> source = JSONUtils.flattenToStringMap(parentSearchHits[i].getSourceAsMap());
-            joinKeys.add(source.get(parentField));
-        }
+            String childIndices = join.getString("indices");
+            String childField = join.getString("child-field");
 
-        XContentBuilder childContentBuilder = XContentFactory.jsonBuilder()
-                .startObject()
+            SearchResponse parentResponse = search(client, parentIndices, content.toString(), settings);
+            SearchHit[] parentSearchHits = parentResponse.getHits().getHits();
+
+            Set<String> joinKeys = new LinkedHashSet<>();
+            for (int i = 0; i < parentSearchHits.length; i++) {
+                Map<String, String> source = JSONUtils.flattenToStringMap(parentSearchHits[i].getSourceAsMap());
+                joinKeys.add(source.get(parentField));
+            }
+
+            XContentBuilder childContentBuilder = XContentFactory.jsonBuilder()
+                    .startObject()
                     .startObject("bool")
-                        .startObject("should")
-                            .startObject("terms")
-                                .field(childField, joinKeys)
-                            .endObject()
-                        .endObject()
+                    .startObject("should")
+                    .startObject("terms")
+                    .field(childField, joinKeys)
                     .endObject()
-                .endObject();
-        List<SearchResponse> childResponseList = searchAll(client, childIndex, Strings.toString(childContentBuilder));
+                    .endObject()
+                    .endObject()
+                    .endObject();
+            List<SearchResponse> childResponseList = searchAll(client, childIndices, Strings.toString(childContentBuilder));
 
+            for (int i = 0; i < parentSearchHits.length; i++) {
+                Map<String, String> parentSource = JSONUtils.flattenToStringMap(parentSearchHits[i].getSourceAsMap());
+                String parentJoinKey = parentSource.get(parentField);
+                List<SearchHit> tmpChildSearchHits = new ArrayList<>();
+                float maxScore = 0.0f;
 
-        for (int i = 0; i < parentSearchHits.length; i++) {
-            Map<String, String> parentSource = JSONUtils.flattenToStringMap(parentSearchHits[i].getSourceAsMap());
-            String parentJoinKey = parentSource.get(parentField);
-            List<SearchHit> tmpChildSearchHits = new ArrayList<>();
-            float maxScore = 0.0f;
+                if (parentJoinKey != null && parentJoinKey.trim().length() > 0) {
+                    for (int j = 0; j < childResponseList.size(); j++) {
+                        SearchResponse childSearchResponse = childResponseList.get(j);
+                        SearchHit[] childSearchHits = childSearchResponse.getHits().getHits();
 
-            if (parentJoinKey != null && parentJoinKey.trim().length() > 0) {
-                for (int j = 0; j < childResponseList.size(); j++) {
-                    SearchResponse childSearchResponse = childResponseList.get(j);
-                    SearchHit[] childSearchHits = childSearchResponse.getHits().getHits();
-
-                    for (int k = 0; k < childSearchHits.length; k++) {
-                        Map<String, String> childSource = JSONUtils.flattenToStringMap(childSearchHits[k].getSourceAsMap());
-                        String childJoinKey = childSource.get(childField);
-                        if (parentJoinKey.equals(childJoinKey)) {
-                            tmpChildSearchHits.add(childSearchHits[k]);
-                            if (childSearchHits[k].getScore() > maxScore) {
-                                maxScore = childSearchHits[k].getScore();
+                        for (int k = 0; k < childSearchHits.length; k++) {
+                            Map<String, String> childSource = JSONUtils.flattenToStringMap(childSearchHits[k].getSourceAsMap());
+                            String childJoinKey = childSource.get(childField);
+                            if (parentJoinKey.equals(childJoinKey)) {
+                                tmpChildSearchHits.add(childSearchHits[k]);
+                                if (childSearchHits[k].getScore() > maxScore) {
+                                    maxScore = childSearchHits[k].getScore();
+                                }
                             }
                         }
                     }
                 }
+
+                SearchHit[] tmp = tmpChildSearchHits.toArray(new SearchHit[0]);
+                Map<String, SearchHits> child = new HashMap<>();
+                child.put("child", new SearchHits(tmp, new TotalHits(tmpChildSearchHits.size(), TotalHits.Relation.EQUAL_TO), maxScore));
+                parentSearchHits[i].setInnerHits(child);
             }
 
-            SearchHit[] tmp = tmpChildSearchHits.toArray(new SearchHit[0]);
-            Map<String, SearchHits> child = new HashMap<>();
-            child.put("child", new SearchHits(tmp, new TotalHits(tmpChildSearchHits.size(), TotalHits.Relation.EQUAL_TO), maxScore));
-            parentSearchHits[i].setInnerHits(child);
+            return channel -> {
+                XContentBuilder xContentBuilder = channel.newBuilder(XContentType.JSON, true);
+                parentResponse.toXContent(xContentBuilder, new ToXContent.MapParams(request.params()));
+                BytesRestResponse bytesRestResponse = new BytesRestResponse(OK, xContentBuilder);
+                channel.sendResponse(bytesRestResponse);
+            };
+        } catch (Throwable e) {
+            logger.error("[JOIN PLUGIN ERROR]", e);
+            throw new IOException("[JOIN PLUGIN ERROR] " + e.getMessage(), e);
         }
-
-//        XContentType.fromMediaType(request.getXContentType().mediaType()).
-        XContentBuilder.builder(XContentType.fromMediaType(request.getXContentType().mediaType()).xContent());
-//        request.getXContentType()
-        XContentBuilder parentBuilder = parentResponse.toXContent(JsonXContent.contentBuilder().prettyPrint(), ToXContent.EMPTY_PARAMS).prettyPrint();
-//        final XContentBuilder builder = JsonXContent.contentBuilder().prettyPrint();
-//        Map<String, Object> response = new HashMap<>();
-//        response.put("docs", docs);
-//        builder.map(response);
-        return channel -> channel.sendResponse(new BytesRestResponse(OK, parentBuilder));
     }
 
 
@@ -150,37 +137,37 @@ public class LeftJoinAction extends BaseRestHandler {
 
 
 
-
-
-
-    static SearchResponse search(NodeClient client, String index, String query) {
-        SearchResponse searchResponse = null;
-        try {
-            SearchSourceBuilder source = new SearchSourceBuilder();
-            source.query(QueryBuilders.wrapperQuery(query));
-            SearchRequest search = new SearchRequest(index.split("[,]"));
-            search.source(source);
-            searchResponse = client.search(search).actionGet();
-        } catch (Exception e) {
-            logger.error("", e);
+    static SearchResponse search(NodeClient client, String indices, String query, Settings settings) throws Exception {
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        SearchModule searchModule = new SearchModule(settings, false, Collections.emptyList());
+        try (XContentParser parser = XContentFactory
+                .xContent(XContentType.JSON)
+                .createParser(new NamedXContentRegistry(searchModule.getNamedXContents()),
+                        DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
+                        query)) {
+            searchSourceBuilder.parseXContent(parser);
         }
+
+        SearchRequest search = new SearchRequest(indices.split("[,]"), searchSourceBuilder);
+        SearchResponse searchResponse = client.search(search).get();
         return searchResponse;
     }
-    static List<SearchResponse> searchAll(NodeClient client, String index, String query) {
-        Scroll scroll = null;
-        String scrollId = null;
+    static List<SearchResponse> searchAll(NodeClient client, String indices, String query) {
+        Scroll scroll;
+        String scrollId;
         List<SearchResponse> responseList = new ArrayList<>();
+        ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
         try {
             SearchSourceBuilder source = new SearchSourceBuilder();
             source.query(QueryBuilders.wrapperQuery(query));
-            SearchRequest search = new SearchRequest(index.split("[,]"));
+            SearchRequest search = new SearchRequest(indices.split("[,]"));
             scroll = new Scroll(TimeValue.MINUS_ONE);
             search.source(source);
             search.scroll(scroll);
             SearchResponse response = client.search(search).actionGet();
             responseList.add(response);
             scrollId = response.getScrollId();
-
+            clearScrollRequest.addScrollId(scrollId);
             while (true) {
                 SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
                 scrollRequest.scroll(scroll);
@@ -190,7 +177,9 @@ public class LeftJoinAction extends BaseRestHandler {
                 }
                 responseList.add(response);
                 scrollId = response.getScrollId();
+                clearScrollRequest.addScrollId(scrollId);
             }
+            client.clearScroll(clearScrollRequest);
         } catch (Exception e) {
             logger.error("", e);
         }

@@ -125,6 +125,7 @@ public class JSONUtils {
     }
     static SearchSourceBuilder parseSearchSourceBuilder(XContentParser xContentParser, boolean checkTrailingTokens) throws IOException {
         SearchSourceBuilder builder = new SearchSourceBuilder();
+
         builder.parseXContent(xContentParser, checkTrailingTokens);
         return builder;
     }

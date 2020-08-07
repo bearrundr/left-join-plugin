@@ -1,0 +1,57 @@
+# 조인 테스트
+## 인덱스 생성
+PUT /parent
+{
+  "settings": {
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "properties": {
+      "column1": {
+        "type": "keyword"
+      },
+      "column2": {
+        "type": "text"
+      },
+      "fk": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+# 인덱스 생성
+PUT /child
+{
+  "settings": {
+    "number_of_replicas": 0
+  },
+  "mappings": {
+    "properties": {
+      "pk": {
+        "type": "keyword"
+      },
+      "column3": {
+        "type": "text"
+      },
+      "column4": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+
+# 데이터 생성
+# case 1.
+POST /parent/_doc
+{
+  "column1": "a",
+  "column2": "a",
+  "fk": "key1"
+}
+POST /child/_doc
+{
+  "pk": "key1",
+  "column3": "b",
+  "column4": "b"
+}
+
