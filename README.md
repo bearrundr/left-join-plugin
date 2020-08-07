@@ -34,7 +34,7 @@ VM options: -Des.path.conf=<join-plugin>\config -Des.path.home=<join-plugin> -Dl
 |parent | 메인 쿼리의 문서의 필드명 |
 |child | 메인쿼리와 조인할 필드명 |
 |should | 서브 인덱스명에서 검색시 조건 추가 |
-|minimum_should_match | 서브 인덱스명에서 검색시 최소 매칭 값 |
+|minimum_should_match | 서브 인덱스명에서 검색시 최소 매칭 값 (default: 0) |
 
 
 문법)
