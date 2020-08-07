@@ -39,19 +39,89 @@ PUT /child
     }
   }
 }
+PUT /child2
+{
+  "mappings": {
+    "properties": {
+      "pk": {
+        "type": "keyword"
+      },
+      "column5": {
+        "type": "text"
+      },
+      "column6": {
+        "type": "keyword"
+      }
+    }
+  }
+}
+PUT /child3
+{
+  "mappings": {
+    "properties": {
+      "pk": {
+        "type": "keyword"
+      },
+      "column7": {
+        "type": "text"
+      },
+      "column8": {
+        "type": "keyword"
+      }
+    }
+  }
+}
 
-# 데이터 생성
-# case 1.
+
+# 테스트 데이터 생성
 POST /parent/_doc
 {
   "column1": "a",
   "column2": "a",
   "fk": "key1"
 }
+
 POST /child/_doc
 {
   "pk": "key1",
   "column3": "b",
   "column4": "b"
+}
+POST /child/_doc
+{
+  "pk": "key1",
+  "column3": "c",
+  "column4": "c"
+}
+POST /parent/_doc
+{
+  "column1": "aaaaaaa",
+  "column2": "aaaaaaaaa",
+  "fk": "key1000"
+}
+POST /child2/_doc
+{
+  "pk": "key1",
+  "column3": "e",
+  "column4": "f"
+}
+POST /child2/_doc
+{
+  "pk": "key55",
+  "column3": "e",
+  "column4": "f"
+}
+POST /child3/_doc
+{
+  "pk": "key55",
+  "column3": "g",
+  "column4": "h"
+}
+
+POST /parent/_doc
+{
+  "column1": "ggg",
+  "column2": "ggrr",
+  "fk": "key55"
 }
 
