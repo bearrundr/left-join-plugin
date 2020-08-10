@@ -85,49 +85,4 @@ public class JSONUtils {
         }
     }
 
-
-    public static XContentBuilder convertJsonToXContent(String json) throws IOException {
-        XContentBuilder xContentBuilder = XContentFactory.jsonBuilder().prettyPrint();
-        try (XContentParser p = XContentFactory
-                .xContent(XContentType.JSON)
-                .createParser(
-                        NamedXContentRegistry.EMPTY,
-                        DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                        json)) {
-            xContentBuilder.copyCurrentStructure(p);
-        }
-        return xContentBuilder;
-    }
-
-    static XContentParser parseXContentParser(String content) throws IOException {
-        return XContentType
-                .JSON
-                .xContent()
-                .createParser(NamedXContentRegistry.EMPTY, DeprecationHandler.THROW_UNSUPPORTED_OPERATION, content);
-    }
-    static Map<String, Object> parseMapping(XContentParser xContentParser) throws IOException {
-        return xContentParser.map();
-    }
-    static XContentBuilder convertMapToXContentBuilder(Map<String, Object> map) throws IOException {
-        return XContentFactory.jsonBuilder().map(map);
-    }
-
-
-    static XContentParser convertXContentBuilderToXContentParser(XContentBuilder xContentBuilder) throws IOException {
-        return JsonXContent.jsonXContent.createParser(
-                NamedXContentRegistry.EMPTY,
-                LoggingDeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                Strings.toString(xContentBuilder)
-        );
-    }
-    static SearchSourceBuilder parseSearchSourceBuilder(XContentParser xContentParser) throws IOException {
-        return parseSearchSourceBuilder(xContentParser, true);
-    }
-    static SearchSourceBuilder parseSearchSourceBuilder(XContentParser xContentParser, boolean checkTrailingTokens) throws IOException {
-        SearchSourceBuilder builder = new SearchSourceBuilder();
-
-        builder.parseXContent(xContentParser, checkTrailingTokens);
-        return builder;
-    }
-
 }

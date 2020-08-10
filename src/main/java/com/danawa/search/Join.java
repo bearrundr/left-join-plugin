@@ -4,7 +4,6 @@ import org.elasticsearch.search.SearchHit;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -12,8 +11,6 @@ public class Join implements Serializable {
     private String index;
     private String parent;
     private String child;
-//    private List<Map<String, Object>> should;
-//    private int minimumShouldMatch;
     private List<Map<String, Object>> query;
 
 
@@ -44,27 +41,6 @@ public class Join implements Serializable {
         } else {
             this.query = new ArrayList<>();
         }
-
-//        if (joinMap.get("should") != null) {
-//            Object shouldObject = joinMap.get("should");
-//            if (shouldObject instanceof ArrayList) {
-//                this.should = (ArrayList) shouldObject;
-//            } else if (shouldObject instanceof HashMap) {
-//                this.should = new ArrayList<>();
-//                this.should.add((Map <String, Object>)shouldObject);
-//            } else {
-//                this.should = new ArrayList<>();
-//            }
-//        } else {
-//            this.should = new ArrayList<>();
-//        }
-//
-//        if (joinMap.get("minimum_should_match") != null) {
-//            this.minimumShouldMatch = (int) joinMap.get("minimum_should_match");
-//        } else {
-//            this.minimumShouldMatch = 0;
-//        }
-
     }
 
     public String getIndex() {
@@ -106,22 +82,6 @@ public class Join implements Serializable {
     public void setSearchHits(List<SearchHit> searchHits) {
         this.searchHits = searchHits;
     }
-
-//    public List<Map<String, Object>> getShould() {
-//        return should;
-//    }
-//
-//    public void setShould(List<Map<String, Object>> should) {
-//        this.should = should;
-//    }
-//
-//    public int getMinimumShouldMatch() {
-//        return minimumShouldMatch;
-//    }
-//
-//    public void setMinimumShouldMatch(int minimumShouldMatch) {
-//        this.minimumShouldMatch = minimumShouldMatch;
-//    }
 
     public List<Map<String, Object>> getQuery() {
         return query;

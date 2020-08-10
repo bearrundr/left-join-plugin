@@ -20,7 +20,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class EsUtils {
     private static Logger logger = Loggers.getLogger(EsUtils.class, "");
@@ -55,9 +54,6 @@ public class EsUtils {
                     .startObject()
                     .startObject("bool")
                     .field("must").value(mustList)
-//                    .startObject("must").startObject("terms").field(join.getChild(), relationalValues).endObject().endObject()
-//                    .field("should", join.getShould())
-//                    .field("minimum_should_match", join.getMinimumShouldMatch())
                     .endObject()
                     .endObject();
 
