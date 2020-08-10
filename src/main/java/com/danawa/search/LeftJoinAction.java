@@ -71,6 +71,14 @@ public class LeftJoinAction extends BaseRestHandler {
             int objectJoinListSize = objectJoinList.size();
             for (int i = 0; i < objectJoinListSize; i++) {
                 Join join = new Join((Map<String, Object>)objectJoinList.get(i));
+                if (join.getIndex() == null) {
+                    throw new IOException("[Index] field is required.");
+                } else if (join.getParent() == null) {
+                    throw new IOException("[parent] field is required.");
+                } else if (join.getChild() == null) {
+                    throw new IOException("[child] field is required.");
+                }
+
                 Set<String> relationalValues = extractValues(parentSearchHits, join.getParent());
                 List<SearchHit> childSearchHits = EsUtils.childSearch(client, join, relationalValues);
                 join.setSearchHits(childSearchHits);

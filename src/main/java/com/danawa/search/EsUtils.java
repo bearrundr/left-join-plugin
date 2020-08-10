@@ -40,11 +40,15 @@ public class EsUtils {
         return searchResponse;
     }
     static List<SearchHit> childSearch(NodeClient client, Join join, Set<String> relationalValues) throws IOException {
+        List<SearchHit> searchHitList = new ArrayList<>();
+        if (relationalValues.size() == 0) {
+            return searchHitList;
+        }
         Scroll scroll;
         String scrollId;
         SearchResponse response;
-        List<SearchHit> searchHitList = new ArrayList<>();
         ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
+
         try {
             List<Map<String, Object>> mustList = new ArrayList<>();
             mustList.add(Map.of("terms", Map.of(join.getChild(), relationalValues)));
