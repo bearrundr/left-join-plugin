@@ -12,8 +12,10 @@ public class Join implements Serializable {
     private String index;
     private String parent;
     private String child;
-    private List<Map<String, Object>> should;
-    private int minimumShouldMatch;
+//    private List<Map<String, Object>> should;
+//    private int minimumShouldMatch;
+    private List<Map<String, Object>> query;
+
 
     private float maxScore;
     private List<SearchHit> searchHits;
@@ -31,26 +33,37 @@ public class Join implements Serializable {
         if (joinMap.get("child") != null) {
             this.setChild((String) joinMap.get("child"));
         }
-
-        if (joinMap.get("should") != null) {
-            Object shouldObject = joinMap.get("should");
-            if (shouldObject instanceof ArrayList) {
-                this.should = (ArrayList) shouldObject;
-            } else if (shouldObject instanceof HashMap) {
-                this.should = new ArrayList<>();
-                this.should.add((Map <String, Object>)shouldObject);
+        if (joinMap.get("query") != null) {
+            Object queryObject = joinMap.get("query");
+            if (queryObject instanceof ArrayList) {
+                this.query = (List<Map<String, Object>>) queryObject;
             } else {
-                this.should = new ArrayList<>();
+                this.query = new ArrayList<>();
+                this.query.add((Map<String, Object>) queryObject);
             }
         } else {
-            this.should = new ArrayList<>();
+            this.query = new ArrayList<>();
         }
 
-        if (joinMap.get("minimum_should_match") != null) {
-            this.minimumShouldMatch = (int) joinMap.get("minimum_should_match");
-        } else {
-            this.minimumShouldMatch = 0;
-        }
+//        if (joinMap.get("should") != null) {
+//            Object shouldObject = joinMap.get("should");
+//            if (shouldObject instanceof ArrayList) {
+//                this.should = (ArrayList) shouldObject;
+//            } else if (shouldObject instanceof HashMap) {
+//                this.should = new ArrayList<>();
+//                this.should.add((Map <String, Object>)shouldObject);
+//            } else {
+//                this.should = new ArrayList<>();
+//            }
+//        } else {
+//            this.should = new ArrayList<>();
+//        }
+//
+//        if (joinMap.get("minimum_should_match") != null) {
+//            this.minimumShouldMatch = (int) joinMap.get("minimum_should_match");
+//        } else {
+//            this.minimumShouldMatch = 0;
+//        }
 
     }
 
@@ -94,19 +107,27 @@ public class Join implements Serializable {
         this.searchHits = searchHits;
     }
 
-    public List<Map<String, Object>> getShould() {
-        return should;
+//    public List<Map<String, Object>> getShould() {
+//        return should;
+//    }
+//
+//    public void setShould(List<Map<String, Object>> should) {
+//        this.should = should;
+//    }
+//
+//    public int getMinimumShouldMatch() {
+//        return minimumShouldMatch;
+//    }
+//
+//    public void setMinimumShouldMatch(int minimumShouldMatch) {
+//        this.minimumShouldMatch = minimumShouldMatch;
+//    }
+
+    public List<Map<String, Object>> getQuery() {
+        return query;
     }
 
-    public void setShould(List<Map<String, Object>> should) {
-        this.should = should;
-    }
-
-    public int getMinimumShouldMatch() {
-        return minimumShouldMatch;
-    }
-
-    public void setMinimumShouldMatch(int minimumShouldMatch) {
-        this.minimumShouldMatch = minimumShouldMatch;
+    public void setQuery(List<Map<String, Object>> query) {
+        this.query = query;
     }
 }

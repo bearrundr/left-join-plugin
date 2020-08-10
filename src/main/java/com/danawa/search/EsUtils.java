@@ -20,6 +20,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class EsUtils {
     private static Logger logger = Loggers.getLogger(EsUtils.class, "");
@@ -46,12 +47,17 @@ public class EsUtils {
         List<SearchHit> searchHitList = new ArrayList<>();
         ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
         try {
+            List<Map<String, Object>> mustList = new ArrayList<>();
+            mustList.add(Map.of("terms", Map.of(join.getChild(), relationalValues)));
+            mustList.addAll(join.getQuery() != null ? join.getQuery() : new ArrayList<>());
+
             XContentBuilder childContentBuilder = XContentFactory.jsonBuilder()
                     .startObject()
                     .startObject("bool")
-                    .startObject("must").startObject("terms").field(join.getChild(), relationalValues).endObject().endObject()
-                    .field("should", join.getShould())
-                    .field("minimum_should_match", join.getMinimumShouldMatch())
+                    .field("must").value(mustList)
+//                    .startObject("must").startObject("terms").field(join.getChild(), relationalValues).endObject().endObject()
+//                    .field("should", join.getShould())
+//                    .field("minimum_should_match", join.getMinimumShouldMatch())
                     .endObject()
                     .endObject();
 
