@@ -13,7 +13,6 @@ import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestHandler;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -21,25 +20,18 @@ import static java.util.Collections.singletonList;
 
 
 public class LeftJoinPlugin extends Plugin implements ActionPlugin {
-
     private static Logger logger = Loggers.getLogger(LeftJoinPlugin.class, "");
 
-    public LeftJoinPlugin() {
-        logger.trace("init");
-    }
+    public LeftJoinPlugin() {}
 
     /**
      * 액션 핸들러 등록
      * ES 에 상호작용이 가능한 REST 액션 핸들러를 등록한다.
      */
-    @Override public List<RestHandler> getRestHandlers(Settings settings, RestController controller,
+    @Override
+    public List<RestHandler> getRestHandlers(Settings settings, RestController controller,
                                                        ClusterSettings clusterSettings, IndexScopedSettings indexScopedSettings, SettingsFilter filter,
                                                        IndexNameExpressionResolver resolver, Supplier<DiscoveryNodes> nodes) {
-//        return singletonList(new LeftJoinAction(settings, controller));
-        List<RestHandler> list = new ArrayList<>();
-//        list.add(new JoinAction(settings, controller));
-        list.add(new LeftJoinAction(settings, controller));
-        return list;
-
+        return singletonList(new LeftJoinAction(settings, controller));
     }
 }
