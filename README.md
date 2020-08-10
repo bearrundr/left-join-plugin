@@ -33,11 +33,10 @@ VM options: -Des.path.conf=<join-plugin>\config -Des.path.home=<join-plugin> -Dl
 |index | 서브 인덱스명 |
 |parent | 메인 쿼리의 문서의 필드명 |
 |child | 메인쿼리와 조인할 필드명 |
-|should | 서브 인덱스명에서 검색시 조건 추가 |
-|minimum_should_match | 서브 인덱스명에서 검색시 최소 매칭 값 (default: 0) |
+|query | 서브 인덱스 조회시 필터 쿼리 |
 
 
-문법)
+Query 1)
 ```
 GET /parent/_left
 {
@@ -57,14 +56,53 @@ GET /parent/_left
       "index": "child",
       "parent": "fk",
       "child": "pk",
-      "should": [
-        {
-          "term": {
-            "column3": "b"
+      "query": {
+        "term": {
+          "column3": {
+            "value": "b"
           }
         }
-      ],
-      "minimum_should_match": 0
+      }
+    }
+  ]
+}
+```
+
+Query 1)
+```
+GET /parent/_left
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "match": {
+            "column1": "a"
+          }
+        }
+      ]
+    }
+  },
+  "join": [  
+    {
+      "index": "child",
+      "parent": "fk",
+      "child": "pk",
+      "query": [
+        {
+          "bool": {
+            "must": [
+              {
+                "term": {
+                  "column3": {
+                    "value": "b"
+                  }
+                }
+              }
+            ]
+          }
+        }        
+      ]
     }
   ]
 }
